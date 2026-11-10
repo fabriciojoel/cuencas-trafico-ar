@@ -19,6 +19,13 @@ Es un solo `index.html`, sin servidor: doble clic y se abre en el navegador (Chr
 | **Punto de encuentro** | Dónde juntarse para que el que más maneja tarde lo mínimo (o el total sea mínimo). |
 | **Efecto autopista** | Cuánto ahorran las autopistas y autovías frente a rutas comunes de 90 km/h. |
 
+## Cómo se usa en pantalla
+
+- El mapa queda **fijo** a la derecha mientras se recorre el panel de controles; el título y la leyenda van en una columna al costado, con texto a tamaño real.
+- **Zoom**: rueda del mouse o botones +/−, arrastrar para moverse, "Ver todo" para volver.
+- **Alcance**: en "Medir por" se elige *Tiempo de manejo* (ruta más rápida) o *Km recorridos* (ruta más corta). La barra pinta la red hasta donde se llega desde el destino; lo que queda afuera se ve en gris. También se puede escribir el valor: `500`, `500 km`, `6`, `6,5 h`, `4:30`, `90 min`. El mapa muestra qué parte del territorio y de la gente queda dentro.
+- "Crear imagen para imprimir" sigue generando el póster vertical de 3600 × 4800 px (con el alcance y el zoom que estén elegidos).
+
 ## Qué cambió respecto del original español
 
 - **Datos**: red de OpenStreetMap de Argentina (Geofabrik, nov 2026): autopistas, troncales, rutas primarias, secundarias y terciarias con sus ramales. Se recorta al territorio argentino (afuera quedan los tramos chilenos, bolivianos, etc. que trae el extracto).

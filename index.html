@@ -78,8 +78,8 @@ input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); ou
 .row output { font-family: var(--font-data); font-size: 13px; min-width: 4.5em; text-align: right; font-variant-numeric: tabular-nums; }
 .hint { font-size: 12.5px; color: var(--muted); line-height: 1.4; margin: 0; }
 .primary { font: inherit; font-weight: 600; font-size: 14px; padding: 10px 12px 8px; border-radius: 4px; border: 0; background: var(--accent); color: #fff; cursor: pointer; }
-.stage { position: relative; min-width: 0; }
-.poster-wrap { position: relative; width: min(100%, calc((100vh - 72px) * 0.75)); margin: 0 auto; aspect-ratio: 3 / 4; max-width: 100%; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 0 var(--line), 0 12px 40px -24px rgba(0,0,0,.35); }
+.stage { position: sticky; top: 16px; min-width: 0; }
+.poster-wrap { position: relative; width: 100%; height: calc(100vh - 58px); min-height: 420px; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 0 var(--line), 0 12px 40px -24px rgba(0,0,0,.35); }
 canvas#poster { width: 100%; height: 100%; display: block; cursor: crosshair; }
 .status-line { font-family: var(--font-data); font-size: 12px; color: var(--ink); order: 2; white-space: nowrap; }
 .below { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; margin-top: 10px; color: var(--muted); font-size: 12.5px; }
@@ -92,6 +92,14 @@ canvas#poster { width: 100%; height: 100%; display: block; cursor: crosshair; }
 .overlay button { font: inherit; padding: 8px 14px 6px; border-radius: 4px; border: 1px solid #eceae4; background: transparent; color: #eceae4; cursor: pointer; }
 .loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-data); font-size: 13px; color: var(--muted); background: var(--panel); }
 @media (prefers-reduced-motion: no-preference) { canvas#poster { transition: opacity .25s ease; } }
+@media (max-width: 900px) { .stage { position: relative; top: auto; } .poster-wrap { height: 78vh; } }
+.zoomctl { position: absolute; bottom: 10px; left: 10px; display: flex; gap: 4px; z-index: 2; }
+.zoomctl button { font: inherit; font-size: 15px; min-width: 32px; height: 32px; padding: 0 9px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; opacity: .92; }
+.zoomctl button:hover { border-color: var(--muted); }
+.numin { font: inherit; font-family: var(--font-data); font-size: 13px; width: 6.6em; padding: 6px 7px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-align: right; box-sizing: border-box; }
+.limval { font-family: var(--font-data); font-size: 13px; color: var(--ink); }
+.credits { font-size: 11.5px; }
+.credits a { color: inherit; }
 </style>
 </head>
 <body>
@@ -157,10 +165,18 @@ canvas#poster { width: 100%; height: 100%; display: block; cursor: crosshair; }
       <p class="hint">O hacé clic en cualquier punto del mapa para mandar todas las rutas ahí.</p>
     </div>
     <div class="group" id="route-group">
-      <span class="label" id="lbl-mode">Ruta por</span>
+      <span class="label" id="lbl-mode">Medir por</span>
       <div class="seg" role="group" aria-labelledby="lbl-mode" id="mode">
-        <button type="button" data-v="time" aria-pressed="true">Más rápida</button>
-        <button type="button" data-v="dist" aria-pressed="false">Más corta</button>
+        <button type="button" data-v="time" aria-pressed="true">Tiempo de manejo</button>
+        <button type="button" data-v="dist" aria-pressed="false">Km recorridos</button>
+      </div>
+      <div class="group" id="limbox">
+        <label class="label" for="lim">Alcance: hasta dónde se llega</label>
+        <div class="row">
+          <input id="lim" type="range" min="0" max="1000" step="1" value="1000" aria-label="Alcance">
+          <input id="limtxt" class="numin" type="text" inputmode="decimal" autocomplete="off" aria-label="Alcance escrito a mano" placeholder="todo">
+        </div>
+        <p class="hint" id="limhint">Mové la barra o escribí un valor (ej. 500 km, 6 h, 4:30) y se pinta la red hasta donde se llega. Tiempo usa la ruta más rápida; km, la más corta.</p>
       </div>
     </div>
     <div class="group dest-group">
@@ -202,15 +218,17 @@ canvas#poster { width: 100%; height: 100%; display: block; cursor: crosshair; }
       <button type="button" class="secondary" id="record">Grabar video</button>
     </div>
     <button type="button" class="primary" id="save">Crear imagen para imprimir</button>
+    <p class="hint credits">Rutas: &copy; colaboradores de OpenStreetMap (ODbL), nov 2026: autopistas, rutas nacionales, provinciales y secundarias. Velocidades estimadas por tipo de vía (120/110/95/80/65 km/h, 50–60 en ripio) o la señalizada. Sin tránsito ni costos de giro. Tierra del Fuego se conecta por la ruta chilena y la balsa del estrecho de Magallanes (~5 h 30). Población: localidades de OSM escaladas al censo 2022 por provincia. Adaptación de <a href="https://github.com/Ntizar/CuencasTrafico" target="_blank" rel="noopener">CuencasTrafico</a> (David Antizar), inspirado en <a href="https://arterialmapping.wordpress.com/2022/03/20/all-roads-lead-to-richmond-2/" target="_blank" rel="noopener">&ldquo;All Roads Lead to Richmond&rdquo;</a> de Arterial Mapping.</p>
   </aside>
   <main class="stage">
     <div class="poster-wrap">
       <canvas id="poster" aria-label="Mapa de rutas más rápidas hasta el destino elegido"></canvas>
+      <div class="zoomctl"><button type="button" id="zin" aria-label="Acercar">+</button><button type="button" id="zout" aria-label="Alejar">−</button><button type="button" id="zall" hidden>Ver todo</button></div>
       <div class="loading" id="loading">Descomprimiendo la red vial de Argentina…</div>
     </div>
     <div class="below">
       <span id="status" class="status-line"></span>
-      <span>Rutas: &copy; colaboradores de OpenStreetMap (ODbL), nov 2026: autopistas, rutas nacionales, provinciales y secundarias. Velocidades estimadas por tipo de vía (120/110/95/80/65 km/h, 50–60 en ripio) o la señalizada. Sin tránsito ni costos de giro. Tierra del Fuego se conecta por la ruta chilena y la balsa del estrecho de Magallanes (~5 h 30). Población: localidades de OSM escaladas al censo 2022 por provincia. Adaptación de <a href="https://github.com/Ntizar/CuencasTrafico" target="_blank" rel="noopener">CuencasTrafico</a> (David Antizar), inspirado en <a href="https://arterialmapping.wordpress.com/2022/03/20/all-roads-lead-to-richmond-2/" target="_blank" rel="noopener">&ldquo;All Roads Lead to Richmond&rdquo;</a> de Arterial Mapping.</span>
+      <span>Rueda del mouse o +/− para acercar · arrastrá para mover · clic para elegir destino</span>
     </div>
   </main>
 </div>
@@ -227,7 +245,7 @@ canvas#poster { width: 100%; height: 100%; display: block; cursor: crosshair; }
 "use strict";
 (() => {
 // ---------- data ----------
-let M, A, NJ, NL, JX, JY, adjPtr, adjTo, adjL, gOff, GX, GY, cityList, townList = [];
+let LB, M, A, NJ, NL, JX, JY, adjPtr, adjTo, adjL, gOff, GX, GY, cityList, townList = [];
 async function loadData() {
   const b64 = document.getElementById("roaddata").textContent.trim();
   const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -264,6 +282,12 @@ async function loadData() {
       x += A.gd[2 * k]; y += A.gd[2 * k + 1];
       GX[k] = M.x0 + x * M.Q; GY[k] = M.y0 + y * M.Q;
     }
+  }
+  LB = new Float32Array(4 * NL);
+  for (let l = 0; l < NL; l++) {
+    let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+    for (let k = gOff[l]; k < gOff[l + 1]; k++) { const x = GX[k], y = GY[k]; if (x < a) a = x; if (x > c) c = x; if (y < b) b = y; if (y > d) d = y; }
+    LB[4 * l] = a; LB[4 * l + 1] = b; LB[4 * l + 2] = c; LB[4 * l + 3] = d;
   }
   if (M.towns) { const T = M.towns, tn = T.n.split("|"); townList = tn.map((name, i) => ({ name, st: T.st[T.s[i]], x: T.x[i] / 10, y: T.y[i] / 10, pop: T.p[i] })); }
   cityList = M.cities.map(([name, st, pop, lon, lat]) => {
@@ -341,7 +365,7 @@ function dijkstra(srcs, mode, costOverride) {
 }
 
 // ---------- state ----------
-const S = { kind: "one", seeds: "top", nSeeds: 50, custom: [], travelers: [], objective: "fair", meetView: "trip", dest: null, destLabel: "", destState: -1, mode: "time", scope: "us", reach: 6, weight: "area", branches: 6, style: "paper" };
+const S = { kind: "one", seeds: "top", nSeeds: 50, custom: [], travelers: [], objective: "fair", meetView: "trip", dest: null, destLabel: "", destState: -1, mode: "time", scope: "us", reach: 6, weight: "area", branches: 6, style: "paper", lim: null };
 try { if (matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light") S.style = "night"; } catch (e) {}
 if (document.documentElement.dataset.theme === "dark") S.style = "night";
 let routedKey = "", R = null;
@@ -416,7 +440,8 @@ function compute() {
   // stats
   let half = 0, acc = 0, far = -1, farD = -1;
   for (let i = 0; i < nOrder; i++) { const v = order[i]; if (!inScope[v] || own[v] <= 0) continue; acc += own[v] - 1e-6; if (!half && acc >= total / 2) half = dist[v]; if (dist[v] > farD && own[v] > 25) { farD = dist[v]; far = v; } }
-  R = { W, col, inScope, info, total, half, far, farD, maxW: 0 };
+  R = { W, col, inScope, info, total, half, far, farD, maxW: 0, maxD: 0 };
+  for (let i = 0; i < NJ; i++) if (inScope[i] && dist[i] < Infinity && dist[i] > R.maxD) R.maxD = dist[i];
   for (let c = head[root]; c >= 0; c = next[c]) R.maxW = Math.max(R.maxW, W[c]);
   if (isI) {
     const TH = [5, 30, 60, 120, 240, 480];
@@ -676,7 +701,8 @@ function computeSheds() {
   for (let i = 0; i < nOrder; i++) { const v = order[i]; acc += own[v] - 1e-6; if (!half && acc >= total / 2) half = dist[v]; if (dist[v] > farD && own[v] > 25) { farD = dist[v]; far = v; } }
   let maxW = 0;
   for (let i = 0; i < NJ; i++) if (par[i] >= 0 && W[i] > maxW) maxW = W[i];
-  R = { W, col: basinOf, inScope, info, total, half, far, farD, maxW, sheds: true, seeds: sd };
+  R = { W, col: basinOf, inScope, info, total, half, far, farD, maxW, sheds: true, seeds: sd, maxD: 0 };
+  for (let i = 0; i < NJ; i++) if (inScope[i] && dist[i] > R.maxD) R.maxD = dist[i];
 }
 
 // ---------- drawing ----------
@@ -691,7 +717,69 @@ const STYLES = {
     pal: ["#1b1d22"],
     ramp: ["#d6d4ce", "#bab8b2", "#9c9a94", "#7c7a75", "#5b5954", "#3a3934", "#16181c"] },
 };
-const PW = 1200, PH = 1600;
+const POSTER_W = 1200, POSTER_H = 1600;
+let PW = POSTER_W, PH = POSTER_H, userExt = null;
+function withPoster(fn) { const sv = [PW, PH, view]; PW = POSTER_W; PH = POSTER_H; try { return fn(); } finally { [PW, PH, view] = sv; } }
+const FADE = 15;
+function limActive() { return S.lim != null && R && !R.meet && !R.inter && R.maxD > 0 && S.lim < R.maxD; }
+function pctTxt(x) { const v = x * 100; return (v > 0 && v < 10 ? v.toFixed(1) : Math.round(v)) + "%"; }
+function limShares() {
+  let a = 0, p = 0, ta = 0, tp = 0;
+  for (let i = 0; i < NJ; i++) { if (!R.inScope[i] || !(dist[i] < Infinity)) continue; ta += A.jarea[i]; tp += A.jpop[i]; if (dist[i] <= S.lim) { a += A.jarea[i]; p += A.jpop[i]; } }
+  return [ta ? a / ta : 0, tp ? p / tp : 0];
+}
+function limText() {
+  const [a, p] = limShares();
+  const lt = S.mode === "dist" ? Math.round(S.lim) + " km" : fmtDur(S.lim);
+  return `A menos de ${lt}${R.sheds ? " de una ciudad" : ""}: ${pctTxt(a)} del territorio y ${pctTxt(p)} de la gente`;
+}
+function layoutFor(extraLine) {
+  if (PW >= 760 && PW > PH * 1.1) {
+    const colW = Math.max(300, Math.min(440, Math.round(PW * 0.33))), g = 22;
+    const map = { x: g, y: g, w: PW - colW - 3 * g, h: PH - 2 * g };
+    return { side: true, map, X0: map.x + map.w + g, X1: PW - g, y0: 46, lead: 20, tMax: 40, tMin: 24, line: 13.5, lh: 21 };
+  }
+  const padX = 56, header = 262 + (extraLine ? 24 : 0), footer = 150;
+  return { side: false, map: { x: padX, y: header, w: PW - 2 * padX, h: PH - header - footer }, X0: padX, X1: PW - padX, y0: 62, lead: 30, tMax: 58, tMin: 28, line: 15, lh: 24, footer };
+}
+function wrapLines(ctx, text, maxW) {
+  const words = String(text).split(" "), out = []; let cur = "";
+  for (const w of words) { const t = cur ? cur + " " + w : w; if (cur && ctx.measureText(t).width > maxW) { out.push(cur); cur = w; } else cur = t; }
+  if (cur) out.push(cur);
+  return out;
+}
+function drawHead(ctx, st, F, FM, Lo, lead, big, lines) {
+  const W = Lo.X1 - Lo.X0;
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic"; ctx.fillStyle = st.ink;
+  ctx.font = `300 ${Lo.lead}px ${F}`;
+  let y = Lo.y0;
+  const ll = wrapLines(ctx, lead, W);
+  ll.forEach((t, i) => ctx.fillText(t, Lo.X0, y + i * Lo.lead * 1.2));
+  y += (ll.length - 1) * Lo.lead * 1.2 + Lo.tMax;
+  let ts = Lo.tMax; ctx.font = `800 ${ts}px ${F}`;
+  while (ts > Lo.tMin && ctx.measureText(big).width > W) { ts -= 2; ctx.font = `800 ${ts}px ${F}`; }
+  const tl = wrapLines(ctx, big, W);
+  tl.forEach((t, i) => ctx.fillText(t, Lo.X0, y + i * ts * 1.08));
+  y += (tl.length - 1) * ts * 1.08 + Lo.lh * 1.9;
+  for (const [t, bold] of lines) {
+    ctx.fillStyle = bold ? st.ink : st.muted; ctx.font = `${bold ? 600 : 400} ${Lo.line}px ${FM}`;
+    for (const s of (Lo.side ? wrapLines(ctx, t, W) : [t])) { ctx.fillText(s, Lo.X0, y); y += Lo.lh; }
+  }
+  return y - Lo.lh;
+}
+function drawFoot(ctx, st, FM, Lo, note) {
+  const W = Lo.X1 - Lo.X0;
+  ctx.fillStyle = st.muted; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  if (!Lo.side) {
+    ctx.font = `400 11px ${FM}`; fillWrap(ctx, note, Lo.X0, PH - 26, W, 13);
+    ctx.font = `400 10.5px ${FM}`; ctx.fillText(CREDIT, Lo.X0, PH - 10);
+    return PH - 40;
+  }
+  ctx.font = `400 10.5px ${FM}`;
+  const ls = wrapLines(ctx, note + " " + CREDIT, W);
+  ls.forEach((t, i) => ctx.fillText(t, Lo.X0, PH - 14 - (ls.length - 1 - i) * 13));
+  return PH - 14 - ls.length * 13 - 16;
+}
 function fmtDur(min) {
   if (S.mode === "dist" && S.kind !== "interstate") { return min >= 100 ? `${Math.round(min / 10) * 10} km` : `${Math.round(min)} km`; }
   const tot = Math.round(min), h = Math.floor(tot / 60), m = tot - h * 60;
@@ -704,18 +792,20 @@ function drawPoster(ctx, scale, anim) {
   const st = STYLES[S.style];
   ctx.save(); ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.fillStyle = st.bg; ctx.fillRect(0, 0, PW, PH);
-  // layout
-  const header = 262, footer = 150, padX = 56;
-  const map = { x: padX, y: header, w: PW - 2 * padX, h: PH - header - footer };
+  const LIM = !anim && limActive() ? S.lim : Infinity;
+  const Lo = layoutFor(LIM < Infinity), map = Lo.map;
   // extent from active nodes
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  if (R.extent) [x0, y0, x1, y1] = R.extent;
+  if (userExt) [x0, y0, x1, y1] = userExt;
+  else if (R.extent) [x0, y0, x1, y1] = R.extent;
   else for (let i = 0; i < NJ; i++) if (R.W[i] > 0) { const x = JX[i], y = JY[i]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   const bwid = Math.max(x1 - x0, 50), bhgt = Math.max(y1 - y0, 50);
   const s = Math.min(map.w / bwid, map.h / bhgt);
   const ox = map.x + (map.w - bwid * s) / 2 - x0 * s, oy = map.y + (map.h - bhgt * s) / 2 + y1 * s;
-  view = { s, ox, oy, scale };
+  view = { s, ox, oy, scale, map };
   const px = x => ox + x * s, py = y => oy - y * s;
+  const vx0 = (map.x - ox) / s - 30 / s, vx1 = (map.x + map.w - ox) / s + 30 / s, vy1 = (oy - map.y) / s + 30 / s, vy0 = (oy - map.y - map.h) / s - 30 / s;
+  const cull = !!userExt;
   // widths
   const minW = 0.55, maxW = 13;
   const widthOf = w => minW + (maxW - minW) * Math.sqrt(Math.min(1, w / R.maxW));
@@ -724,6 +814,7 @@ function drawPoster(ctx, scale, anim) {
   let tMax = 0;
   if (anim) for (let i = 0; i < NJ; i++) if (R.W[i] > 0 && R.inScope[i] && dist[i] < Infinity && dist[i] > tMax) tMax = dist[i];
   const addSeg = (l, from, to, pal, w, t) => {
+    if (cull && (LB[4 * l] > vx1 || LB[4 * l + 2] < vx0 || LB[4 * l + 1] > vy1 || LB[4 * l + 3] < vy0)) return;
     const bucket = Math.round(w * 4);
     const tb = anim ? Math.min(NB - 1, Math.floor(t / tMax * NB)) : 0;
     const key = (tb * 512 + bucket) * 16 + pal;
@@ -753,7 +844,13 @@ function drawPoster(ctx, scale, anim) {
   const cost = S.mode === "dist" && !R.inter ? A.lk : A.lt;
   for (let i = 0; i < nOrder; i++) {
     const v = order[i]; if (R.W[v] <= 0 || par[v] < 0) continue;
-    addSeg(parL[v], 0, 1, cOf(v), widthOf(R.W[v]), dist[v]);
+    const l = parL[v], c = cOf(v), w = widthOf(R.W[v]);
+    if (dist[v] <= LIM) { addSeg(l, 0, 1, c, w, dist[v]); continue; }
+    const p = par[v], dp = dist[p];
+    if (dp >= LIM) { addSeg(l, 0, 1, FADE, minW, dist[v]); continue; }
+    const f = (LIM - dp) / (dist[v] - dp);
+    if (A.lu[l] === p) { addSeg(l, 0, f, c, w, LIM); addSeg(l, f, 1, FADE, minW, dist[v]); }
+    else { addSeg(l, 1 - f, 1, c, w, LIM); addSeg(l, 0, 1 - f, FADE, minW, dist[v]); }
   }
   // non-tree links: each end drains to its own junction
   for (let l = 0; l < NL; l++) {
@@ -763,20 +860,29 @@ function drawPoster(ctx, scale, anim) {
     if (!cu && !cv) continue;
     const Lc = cost[l]; let f = Lc > 0 ? (dist[v] - dist[u] + Lc) / (2 * Lc) : 0.5; f = Math.max(0, Math.min(1, f));
     const tm = (dist[u] + dist[v] + Lc) / 2;
-    if (cu && f > 0) addSeg(l, 0, f, cOf(u), minW, tm);
-    if (cv && f < 1) addSeg(l, f, 1, cOf(v), minW, tm);
+    if (cu && f > 0) {
+      const a = Math.min(f, Math.max(0, (LIM - dist[u]) / Lc));
+      if (a > 0) addSeg(l, 0, a, cOf(u), minW, tm);
+      if (a < f) addSeg(l, a, f, FADE, minW, tm);
+    }
+    if (cv && f < 1) {
+      const b = Math.max(f, Math.min(1, 1 - (LIM - dist[v]) / Lc));
+      if (b < 1) addSeg(l, b, 1, cOf(v), minW, tm);
+      if (b > f) addSeg(l, f, b, FADE, minW, tm);
+    }
   }
   const gl = [...groups.values()].sort((a, b) => a.w - b.w);
   const F = "Overpass, 'Helvetica Neue', Arial, sans-serif", FM = "'Overpass Mono', Menlo, monospace";
-  const clip = () => { ctx.save(); ctx.beginPath(); ctx.rect(map.x - 20, map.y - 12, map.w + 40, map.h + 24); ctx.clip(); };
+  const clip = () => { ctx.save(); ctx.beginPath(); ctx.rect(map.x - (Lo.side ? 8 : 20), map.y - (Lo.side ? 8 : 12), map.w + (Lo.side ? 16 : 40), map.h + (Lo.side ? 16 : 24)); ctx.clip(); };
   const strokeGroups = list => {
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     if (st.glow) {
       ctx.globalCompositeOperation = "lighter";
-      for (const g of list) { if (g.w < 2) continue; ctx.strokeStyle = colors[g.pal]; ctx.globalAlpha = 0.10; ctx.lineWidth = g.w * 3.2; ctx.stroke(g.path); }
+      for (const g of list) { if (g.w < 2 || g.pal === FADE) continue; ctx.strokeStyle = colors[g.pal]; ctx.globalAlpha = 0.10; ctx.lineWidth = g.w * 3.2; ctx.stroke(g.path); }
       ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
     }
-    for (const g of list) { ctx.strokeStyle = colors[g.pal]; ctx.lineWidth = g.w; ctx.globalAlpha = g.w < 0.9 ? 0.85 : 1; ctx.stroke(g.path); }
+    for (const g of list) { if (g.pal !== FADE) continue; ctx.strokeStyle = st.muted; ctx.lineWidth = g.w; ctx.globalAlpha = 0.28; ctx.stroke(g.path); }
+    for (const g of list) { if (g.pal === FADE) continue; ctx.strokeStyle = colors[g.pal]; ctx.lineWidth = g.w; ctx.globalAlpha = g.w < 0.9 ? 0.85 : 1; ctx.stroke(g.path); }
     ctx.globalAlpha = 1;
   };
   const overlays = () => {
@@ -792,28 +898,17 @@ function drawPoster(ctx, scale, anim) {
       ctx.beginPath(); ctx.arc(dxp, dyp, 2.6, 0, 2 * Math.PI); ctx.fillStyle = st.ink; ctx.fill();
     }
   };
-  if (!anim) { if (R.extent) clip(); strokeGroups(gl); overlays(); if (R.extent) ctx.restore(); }
+  if (!anim) { const cl = R.extent || userExt; if (cl) clip(); strokeGroups(gl); overlays(); if (cl) ctx.restore(); }
 
-  if (R.meet || R.inter) drawModeText(ctx, st, F, FM, padX, footer);
+  if (R.meet || R.inter) drawModeText(ctx, st, F, FM, Lo);
   else {
-  // ---- header text
-  ctx.fillStyle = st.ink; ctx.textBaseline = "alphabetic";
   const lead = R.sheds ? (S.mode === "dist" ? "Cuencas viales por distancia de" : "Cuencas viales por tiempo de manejo de") : S.mode === "dist" ? "Las rutas más cortas hasta" : "Las rutas más rápidas en auto hasta";
-  ctx.font = `300 30px ${F}`; ctx.fillText(lead, padX, 62);
   const bigTitle = R.sheds ? shedTitle() : S.destLabel;
   const halfTxt = R.sheds ? (S.weight === "pop" ? "La mitad de la gente vive a menos de" : "La mitad del territorio está a menos de") : S.weight === "pop" ? "La mitad de la gente empieza a menos de" : "La mitad del territorio está a menos de";
   const halfLine = `${halfTxt} ${fmtDur(R.half)}${R.sheds ? (S.seeds === "capitals" ? " de una capital" : " de una de estas ciudades") : ""}`;
-  const reserve = 0;
-  let tsize = 58; ctx.font = `800 ${tsize}px ${F}`;
-  while (tsize > 28 && ctx.measureText(bigTitle).width > PW - 2 * padX - reserve) { tsize -= 2; ctx.font = `800 ${tsize}px ${F}`; }
-  ctx.fillText(bigTitle, padX, 120);
-  ctx.font = `400 15px ${FM}`; ctx.fillStyle = st.muted; ctx.textAlign = "left";
   const scopeTxt = R.sheds ? "cada punto drena hacia la ciudad a la que llega antes" : S.scope === "us" ? "desde cualquier punto de Argentina" : S.scope === "state" ? `desde cualquier punto de ${M.states[S.destState][1]}` : `desde cualquier punto a menos de ${S.mode === "dist" ? Math.round(S.reach * 60) + " km" : fmtHours(S.reach)}`;
-  ctx.fillText(scopeTxt, padX, 166);
   const wTxt = S.weight === "pop" ? "grosor ∝ personas cuyo camino usa la ruta" : "grosor ∝ territorio cuyo camino usa la ruta";
-  ctx.fillText(wTxt, padX, 190);
-  ctx.fillStyle = st.ink; ctx.font = `600 15px ${FM}`;
-  ctx.fillText(halfLine, padX, 218);
+  const lines = [[scopeTxt, 0], [wTxt, 0], [halfLine, 1]];
   if (R.far >= 0) {
     const fs = A.jstate[R.far], fc = nearestCity(JX[R.far], JY[R.far], 60, M.states[fs][0]);
     let where;
@@ -824,43 +919,48 @@ function drawPoster(ctx, scale, anim) {
       const part = Math.hypot(ddx, ddy) < 60 ? "el centro" : `el ${compass(Math.atan2(ddx, ddy))}`;
       where = `en ${part} de ${M.states[fs][1]}`;
     }
-    ctx.fillStyle = st.muted; ctx.font = `400 15px ${FM}`;
-    ctx.fillText(`${R.sheds ? "El más remoto" : "El más lejano"}: ${fmtDur(R.farD)} ${where}`, padX, 242);
+    lines.push([`${R.sheds ? "El más remoto" : "El más lejano"}: ${fmtDur(R.farD)} ${where}`, 0]);
   }
-  ctx.textAlign = "left";
-  // ---- footer legend
-  ctx.strokeStyle = st.rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padX, PH - footer + 18); ctx.lineTo(PW - padX, PH - footer + 18); ctx.stroke();
+  if (LIM < Infinity) lines.push([limText(), 1]);
+  const hb = drawHead(ctx, st, F, FM, Lo, lead, bigTitle, lines);
+  const note = R.sheds ? "Cada color es el territorio cuya ruta más rápida llega a esa ciudad antes que a cualquier otra; las líneas muestran el árbol de rutas dentro de cada cuenca." : st.mono ? "Cada cruce de la red de autopistas, rutas nacionales, provinciales y secundarias enruta hacia el punto marcado." : "Cada color es una rama del árbol de rutas, con el nombre de la ruta que sigue su tronco.";
+  const lyMax = drawFoot(ctx, st, FM, Lo, note + (LIM < Infinity ? " En gris, lo que queda fuera del alcance elegido." : ""));
+  const X0 = Lo.X0, X1 = Lo.X1, ly0 = Lo.side ? hb + 50 : PH - Lo.footer + 50;
+  // ---- legend
+  ctx.strokeStyle = st.rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X0, ly0 - 32); ctx.lineTo(X1, ly0 - 32); ctx.stroke();
   const items = R.info.filter(it => it.share > 0.002).sort((a, b) => b.share - a.share);
-  let lx = padX, ly = PH - footer + 50;
+  let lx = X0, ly = ly0;
   if (st.mono) {
-    // width key instead of branch colors
     const unit = S.weight === "pop" ? "de la gente" : "del territorio";
     ctx.fillStyle = st.muted; ctx.font = `400 13px ${FM}`; ctx.fillText("Cuota de todas las rutas", lx, ly);
     lx += ctx.measureText("Cuota de todas las rutas").width + 28;
     for (const f of [0.01, 0.05, 0.2, 0.5]) {
       if (f * R.total > R.maxW * 1.05) continue;
-      const w = widthOf(f * R.total);
+      const w = widthOf(f * R.total), txt = `${Math.round(f * 100)}% ${unit}`;
+      ctx.font = `600 15px ${F}`; const tw = 58 + ctx.measureText(txt).width;
+      if (lx + tw > X1 && lx > X0) { lx = X0; ly += 28; }
+      if (ly > lyMax) break;
       ctx.strokeStyle = st.ink; ctx.lineWidth = w; ctx.lineCap = "butt";
       ctx.beginPath(); ctx.moveTo(lx, ly - 5); ctx.lineTo(lx + 46, ly - 5); ctx.stroke();
-      ctx.fillStyle = st.ink; ctx.font = `600 15px ${F}`; ctx.fillText(`${Math.round(f * 100)}% ${unit}`, lx + 58, ly);
-      lx += 58 + ctx.measureText(`${Math.round(f * 100)}% ${unit}`).width + 40;
+      ctx.fillStyle = st.ink; ctx.fillText(txt, lx + 58, ly);
+      lx += tw + 40;
     }
   }
   if (R.sheds && !st.mono) {
     ctx.fillStyle = st.muted; ctx.font = `400 13px ${FM}`;
     const lbl = S.weight === "pop" ? "Cuencas mayores por población" : "Cuencas mayores por territorio";
-    { let x = lx + ctx.measureText(lbl).width + 28, rows = 1;
+    if (!Lo.side) { let x = lx + ctx.measureText(lbl).width + 28, rows = 1;
       for (const it of items.slice(0, 9)) { const pct = `${(it.share * 100).toFixed(it.share < 0.1 ? 1 : 0)}%`; ctx.font = `600 16px ${F}`; const nw = ctx.measureText(it.name).width; ctx.font = `400 13px ${FM}`;
-        const wTot = 30 + nw + 8 + ctx.measureText(pct).width; if (x + wTot > PW - padX && x > padX) { x = padX; rows++; } x += wTot + 28; }
+        const wTot = 30 + nw + 8 + ctx.measureText(pct).width; if (x + wTot > X1 && x > X0) { x = X0; rows++; } x += wTot + 28; }
       if (rows > 1) ly -= 14; ctx.font = `400 13px ${FM}`; }
     ctx.fillText(lbl, lx, ly); lx += ctx.measureText(lbl).width + 28;
-    for (const it of items.slice(0, 9)) {
+    for (const it of items.slice(0, Lo.side ? 14 : 9)) {
       const pct = `${(it.share * 100).toFixed(it.share < 0.1 ? 1 : 0)}%`;
       ctx.font = `600 16px ${F}`; const nw = ctx.measureText(it.name).width;
       ctx.font = `400 13px ${FM}`; const pw = ctx.measureText(pct).width;
       const wTot = 30 + nw + 8 + pw;
-      if (lx + wTot > PW - padX && lx > padX) { lx = padX; ly += 28; }
-      if (ly > PH - 40) break;
+      if (lx + wTot > X1 && lx > X0) { lx = X0; ly += 28; }
+      if (ly > lyMax) break;
       ctx.strokeStyle = st.pal[it.pal % st.pal.length]; ctx.lineWidth = 6; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(lx + 3, ly - 6); ctx.lineTo(lx + 20, ly - 6); ctx.stroke();
       ctx.fillStyle = st.ink; ctx.font = `600 16px ${F}`; ctx.fillText(it.name, lx + 30, ly);
@@ -869,29 +969,25 @@ function drawPoster(ctx, scale, anim) {
     }
   }
   const brItems = st.mono || R.sheds ? [] : items.slice(0, 10);
-  { let x = lx, rows = 1;
+  if (!Lo.side) { let x = lx, rows = 1;
     for (const it of brItems) { ctx.font = `600 17px ${F}`; const rw = ctx.measureText(it.road).width; ctx.font = `400 13px ${FM}`;
       const wTot = 38 + rw + 10 + ctx.measureText(`${Math.max(1, Math.round(it.share * 100))}% · desde el ${compass(it.ang)}`).width;
-      if (x + wTot > PW - padX && x > padX) { x = padX; rows++; } x += wTot + 34; }
+      if (x + wTot > X1 && x > X0) { x = X0; rows++; } x += wTot + 34; }
     if (rows > 1) ly -= 14; }
   for (const it of brItems) {
     ctx.font = `600 17px ${F}`; const rw = ctx.measureText(it.road).width;
     const meta = `${Math.max(1, Math.round(it.share * 100))}% · desde el ${compass(it.ang)}`;
     ctx.font = `400 13px ${FM}`; const mw = ctx.measureText(meta).width;
     const wTot = 38 + rw + 10 + mw;
-    if (lx + wTot > PW - padX && lx > padX) { lx = padX; ly += 28; }
-    if (ly > PH - 40) break;
+    if (lx + wTot > X1 && lx > X0) { lx = X0; ly += 28; }
+    if (ly > lyMax) break;
     ctx.strokeStyle = st.pal[it.pal % st.pal.length]; ctx.lineWidth = 6; ctx.lineCap = "round";
     ctx.beginPath(); ctx.moveTo(lx + 3, ly - 6); ctx.lineTo(lx + 26, ly - 6); ctx.stroke();
     ctx.fillStyle = st.ink; ctx.font = `600 17px ${F}`; ctx.fillText(it.road, lx + 38, ly);
     ctx.fillStyle = st.muted; ctx.font = `400 13px ${FM}`; ctx.fillText(meta, lx + 38 + rw + 10, ly);
     lx += wTot + 34;
   }
-  ctx.fillStyle = st.muted; ctx.font = `400 11px ${FM}`;
-  fillWrap(ctx, R.sheds ? "Cada color es el territorio cuya ruta más rápida llega a esa ciudad antes que a cualquier otra; las líneas muestran el árbol de rutas dentro de cada cuenca. Rutas: © OpenStreetMap (ODbL), nov 2026." : st.mono ? "Cada cruce de la red de autopistas, rutas nacionales, provinciales y secundarias enruta hacia el punto marcado. Rutas: © OpenStreetMap (ODbL)." : "Cada color es una rama del árbol de rutas, con el nombre de la ruta que sigue su tronco. Rutas: © OpenStreetMap (ODbL), nov 2026.", padX, PH - 26, PW - 2 * padX, 13);
   }
-  ctx.fillStyle = st.muted; ctx.font = `400 10.5px ${FM}`; ctx.textAlign = "left";
-  ctx.fillText(CREDIT, padX, PH - 10);
   ctx.restore();
   if (anim) {
     const frames = Array.from({ length: NB }, () => []);
@@ -900,12 +996,11 @@ function drawPoster(ctx, scale, anim) {
   }
 }
 const CREDIT = "Basado en CuencasTrafico de David Antizar (@Ntizar) e inspirado en “All Roads Lead to Richmond” de Arterial Mapping. Datos: © OpenStreetMap (ODbL), nov 2026.";
-function drawModeText(ctx, st, F, FM, padX, footer) {
+function drawModeText(ctx, st, F, FM, Lo) {
   ctx.fillStyle = st.ink; ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
   let lead, big;
   if (R.meet) { lead = R.fair ? "El lugar más justo para juntarse es" : "El lugar con menos manejo total es"; big = R.spot.title; }
   else { lead = "Cuánto acortan las autopistas cada viaje hasta"; big = S.destLabel; }
-  ctx.font = `300 30px ${F}`; ctx.fillText(lead, padX, 62);
   const lines = [];
   if (R.meet) {
     const K = R.times.length, tot = R.times.reduce((a, b) => a + b, 0);
@@ -923,47 +1018,40 @@ function drawModeText(ctx, st, F, FM, padX, footer) {
     lines.push([`Las autopistas y autovías recortan el viaje medio en ${fmtDur(R.avgSaved)} (${pct}%)`, 1]);
     if (R.maxSavedNode >= 0) lines.push([`Mayor ahorro: ${fmtDur(R.maxSaved)} ${describePlace(R.maxSavedNode)}`, 0]);
   }
-  const reserve = 0;
-  let tsize = 58; ctx.font = `800 ${tsize}px ${F}`;
-  while (tsize > 28 && ctx.measureText(big).width > PW - 2 * padX - reserve) { tsize -= 2; ctx.font = `800 ${tsize}px ${F}`; }
-  ctx.fillText(big, padX, 120);
-  ctx.textAlign = "left";
-  const ys = [166, 190, 218, 242];
-  lines.forEach(([t, bold], i) => { ctx.fillStyle = bold ? st.ink : st.muted; ctx.font = `${bold ? 600 : 400} 15px ${FM}`; ctx.fillText(t, padX, ys[i]); });
-  ctx.textAlign = "left";
-  // footer
-  ctx.strokeStyle = st.rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padX, PH - footer + 18); ctx.lineTo(PW - padX, PH - footer + 18); ctx.stroke();
-  let lx = padX, ly = PH - footer + 50;
+  const hb = drawHead(ctx, st, F, FM, Lo, lead, big, lines);
+  const note = R.meet ? `Las líneas gruesas son la ruta de cada viajero. El resto se sombrea según cuánto crecería ${R.fair ? "el trayecto más largo" : "el trayecto medio"} si se juntaran ahí: lo más oscuro está a 15 minutos del mejor punto.` : "Cada ruta se colorea según cuánto más tardaría el viaje desde ahí si las autopistas y autovías fueran rutas comunes de 90 km/h.";
+  const lyMax = drawFoot(ctx, st, FM, Lo, note);
+  const padX = Lo.X0, X1 = Lo.X1, ly0 = Lo.side ? hb + 50 : PH - Lo.footer + 50;
+  ctx.strokeStyle = st.rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padX, ly0 - 32); ctx.lineTo(X1, ly0 - 32); ctx.stroke();
+  let lx = padX, ly = ly0;
   if (R.meet) {
     const idx = R.times.map((t, i) => i).sort((a, b) => R.times[b] - R.times[a]);
     ctx.font = `400 13px ${FM}`; const lead0 = ctx.measureText("Manejo hasta el punto de encuentro").width + 26;
     { let x = padX + lead0, rows = 1;
       for (const i of idx) { ctx.font = `600 15px ${F}`; const nw = ctx.measureText(S.travelers[i].name).width; ctx.font = `400 13px ${FM}`; const tw = ctx.measureText(fmtDur(R.times[i])).width;
-        if (x + nw + tw + 8 > PW - padX && x > padX) { x = padX; rows++; } x += nw + tw + 8 + 26; }
-      if (rows > 1) ly -= 12; }
+        if (x + nw + tw + 8 > X1 && x > padX) { x = padX; rows++; } x += nw + tw + 8 + 26; }
+      if (rows > 1 && !Lo.side) ly -= 12; }
     ctx.fillStyle = st.muted; ctx.font = `400 13px ${FM}`; ctx.fillText("Manejo hasta el punto de encuentro", lx, ly); lx += lead0;
     for (const i of idx) {
       const nm = S.travelers[i].name, tt = fmtDur(R.times[i]);
       ctx.font = `600 15px ${F}`; const nw = ctx.measureText(nm).width; ctx.font = `400 13px ${FM}`; const tw = ctx.measureText(tt).width;
-      if (lx + nw + tw + 8 > PW - padX && lx > padX) { lx = padX; ly += 24; }
-      if (ly > PH - 40) break;
+      if (lx + nw + tw + 8 > X1 && lx > padX) { lx = padX; ly += 24; }
+      if (ly > lyMax) break;
       ctx.fillStyle = st.ink; ctx.font = `600 15px ${F}`; ctx.fillText(nm, lx, ly);
       ctx.fillStyle = st.muted; ctx.font = `400 13px ${FM}`; ctx.fillText(tt, lx + nw + 8, ly);
       lx += nw + tw + 8 + 26;
     }
-    ctx.fillStyle = st.muted; ctx.font = `400 11px ${FM}`;
-    fillWrap(ctx, `Las líneas gruesas son la ruta de cada viajero. El resto se sombrea según cuánto crecería ${R.fair ? "el trayecto más largo" : "el trayecto medio"} si se juntaran ahí: lo más oscuro está a 15 minutos del mejor punto. Rutas: © OpenStreetMap (ODbL).`, padX, PH - 26, PW - 2 * padX, 13);
   } else {
     const labels = ["menos de 5 min", "5–30 min", "30–60 min", "1–2 h", "2–4 h", "4–8 h", "8 h +"];
     ctx.fillStyle = st.muted; ctx.font = `400 13px ${FM}`; ctx.fillText("Tiempo que ahorran las autopistas", lx, ly); lx += ctx.measureText("Tiempo que ahorran las autopistas").width + 26;
     labels.forEach((t, i) => {
+      ctx.font = `600 14px ${F}`; const need = 30 + ctx.measureText(t).width;
+      if (lx + need > X1 && lx > padX) { lx = padX; ly += 26; }
       ctx.strokeStyle = st.ramp[i]; ctx.lineWidth = 7; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(lx + 3, ly - 5); ctx.lineTo(lx + 22, ly - 5); ctx.stroke();
       ctx.fillStyle = st.ink; ctx.font = `600 14px ${F}`; ctx.fillText(t, lx + 30, ly);
       lx += 30 + ctx.measureText(t).width + 24;
     });
-    ctx.fillStyle = st.muted; ctx.font = `400 11px ${FM}`;
-    fillWrap(ctx, "Cada ruta se colorea según cuánto más tardaría el viaje desde ahí si las autopistas y autovías fueran rutas comunes de 90 km/h. Rutas: © OpenStreetMap (ODbL).", padX, PH - 26, PW - 2 * padX, 13);
   }
 }
 function drawMeetOverlay(ctx, st, px, py, F) {
@@ -1044,7 +1132,39 @@ function fillWrap(ctx, text, x, yLast, maxW, lh) {
   lines.forEach((l, i) => ctx.fillText(l, x, yLast - (lines.length - 1 - i) * lh));
 }
 function fmtHours(h) { return `${h} h`; }
-let view = null;
+let view = null, suppressClick = false;
+// alcance: la barra va de 0 a 1000; 1000 = todo. Escala cuadrática para afinar los valores chicos.
+function limFromSlider(v) { const f = v / 1000; return f * f * R.maxD; }
+function sliderFromLim(x) { return R && R.maxD ? Math.round(Math.sqrt(Math.min(1, x / R.maxD)) * 1000) : 1000; }
+function fmtLim(x) {
+  if (S.mode === "dist") return `${Math.round(x)} km`;
+  const t = Math.round(x), hh = Math.floor(t / 60), mm = t - hh * 60;
+  return hh ? `${hh}:${String(mm).padStart(2, "0")} h` : `${mm} min`;
+}
+// "500", "500 km", "6", "6,5 h", "4:30", "4h30", "90 min" -> km o minutos; "" o "todo" -> null; inválido -> undefined
+function parseLim(s) {
+  s = String(s).trim().toLowerCase().replace(",", ".");
+  if (!s || s === "todo") return null;
+  if (S.mode === "dist") { const m = s.match(/^(\d+(?:\.\d+)?)\s*(km)?$/); return m ? Math.max(0, +m[1]) : undefined; }
+  let m = s.match(/^(\d+)\s*(?::|h)\s*(\d{1,2})\s*(m|min)?\s*(h|hs)?$/);
+  if (m) return +m[1] * 60 + +m[2];
+  m = s.match(/^(\d+(?:\.\d+)?)\s*(m|min|mins|minutos)$/);
+  if (m) return +m[1];
+  m = s.match(/^(\d+(?:\.\d+)?)\s*(h|hs|horas)?$/);
+  if (m) return +m[1] * 60;
+  return undefined;
+}
+function syncLimUI() {
+  const box = document.getElementById("limbox"); if (!box) return;
+  const on = S.kind === "one" || S.kind === "sheds";
+  box.hidden = !on;
+  if (!on || !R) return;
+  const limEl = document.getElementById("lim"), limTxt = document.getElementById("limtxt"), hint = document.getElementById("limhint");
+  limEl.value = S.lim == null ? 1000 : sliderFromLim(S.lim);
+  if (document.activeElement !== limTxt) limTxt.value = S.lim == null ? "" : fmtLim(S.lim);
+  limTxt.placeholder = S.mode === "dist" ? "ej. 500 km" : "ej. 4:30 h";
+  hint.textContent = limActive() ? limText() + "." : `Mové la barra o escribí un valor (${S.mode === "dist" ? "ej. 500 km" : "ej. 6 h, 4:30"}) y se pinta la red hasta donde se llega. Máximo: ${fmtDur(R.maxD)}.`;
+}
 
 // ---------- animation ----------
 let animHandle = null;
@@ -1076,10 +1196,10 @@ function playAnim(record) {
   stopAnim();
   const frames = 240, hold = 45;
   let target = canvas, scale;
-  if (record) { target = document.createElement("canvas"); scale = 1.2; target.width = PW * scale; target.height = PH * scale; }
+  if (record) { target = document.createElement("canvas"); scale = 1.2; target.width = POSTER_W * scale; target.height = POSTER_H * scale; }
   else { render(); scale = canvas.width / PW; }
   const ctx = target.getContext("2d");
-  const a = drawPoster(ctx, scale, { frames });
+  const a = record ? withPoster(() => drawPoster(ctx, scale, { frames })) : drawPoster(ctx, scale, { frames });
   ctx.save(); ctx.setTransform(scale, 0, 0, scale, 0, 0); a.overlays(); ctx.restore();
   let rec = null, chunks = [];
   if (record) {
@@ -1123,10 +1243,18 @@ const canvas = document.getElementById("poster"), statusEl = document.getElement
 function render() {
   const rect = canvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-  const scale = rect.width * dpr / PW;
-  canvas.width = Math.round(PW * scale); canvas.height = Math.round(PH * scale);
+  const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+  // en pantalla: texto a tamaño real; si el lienzo es angosto, se dibuja como póster vertical reducido
+  const lw = w >= 760 && w > h * 1.1 ? w : Math.max(w, 760);
+  PW = lw; PH = lw * h / w;
+  const scale = w * dpr / PW;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
   drawPoster(canvas.getContext("2d"), scale);
+  syncLimUI();
+  document.getElementById("zall").hidden = !userExt;
 }
+let rq = 0;
+function scheduleRender() { if (rq) return; rq = requestAnimationFrame(() => { rq = 0; stopAnim(); render(); }); }
 function update(recompute = true) {
   if (!M || ((S.kind === "one" || S.kind === "interstate") && S.dest == null)) return;
   stopAnim();
@@ -1185,7 +1313,7 @@ function setDest(j, label, citySlug) {
   if (S.kind === "one") { try { history.replaceState(null, "", citySlug ? "#" + citySlug : location.pathname + location.search); } catch (e) {} }
   update();
 }
-function setCity(c) { document.getElementById("dest").value = c.label; setDest(nearestJunction(c.x, c.y), c.label, c.slug); }
+function setCity(c) { userExt = null; document.getElementById("dest").value = c.label; setDest(nearestJunction(c.x, c.y), c.label, c.slug); }
 function wireSeg(id, key, after) {
   const el = document.getElementById(id);
   el.addEventListener("click", e => {
@@ -1213,8 +1341,54 @@ async function init() {
   const pick = () => { const v = destIn.value.trim().toLowerCase(); if (!v) return; const c = cityList.find(c => c.label.toLowerCase() === v) || cityList.find(c => c.label.toLowerCase().startsWith(v)) || cityList.find(c => c.name.toLowerCase().includes(v)); if (c) setCity(c); };
   destIn.addEventListener("change", pick);
   destIn.addEventListener("keydown", e => { if (e.key === "Enter") pick(); });
-  wireSeg("mode", "mode"); wireSeg("weight", "weight"); wireSeg("style", "style");
-  wireSeg("kind", "kind", () => { if (S.kind === "meet" && !S.travelers.length) loadPreset("clasicas"); syncShedUI(); if (S.kind === "one") setDest(S.dest, S.destLabel, cityList.find(c => c.label === S.destLabel)?.slug); });
+  wireSeg("mode", "mode", () => { S.lim = null; });
+  const limEl = document.getElementById("lim"), limTxt = document.getElementById("limtxt");
+  limEl.addEventListener("input", () => {
+    if (!R || !R.maxD) return;
+    const v = +limEl.value;
+    S.lim = v >= 1000 ? null : limFromSlider(v);
+    limTxt.value = S.lim == null ? "" : fmtLim(S.lim);
+    scheduleRender();
+  });
+  const applyTxt = () => {
+    const v = parseLim(limTxt.value);
+    if (v === undefined) { limTxt.value = S.lim == null ? "" : fmtLim(S.lim); return; }
+    S.lim = v; scheduleRender();
+  };
+  limTxt.addEventListener("change", applyTxt);
+  limTxt.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); applyTxt(); limTxt.blur(); } });
+  // zoom y arrastre
+  const toLocal = e => { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * PW, (e.clientY - r.top) / r.height * PH]; };
+  const visRect = () => { const v = view, m = v.map; return [(m.x - v.ox) / v.s, (v.oy - m.y - m.h) / v.s, (m.x + m.w - v.ox) / v.s, (v.oy - m.y) / v.s]; };
+  const zoomAt = (wx, wy, k) => {
+    const [a, b, c, d] = visRect();
+    const n = [wx + (a - wx) * k, wy + (b - wy) * k, wx + (c - wx) * k, wy + (d - wy) * k];
+    if (n[2] - n[0] > 4500 && n[3] - n[1] > 4500) userExt = null;
+    else if (n[2] - n[0] < 4) return;
+    else userExt = n;
+    scheduleRender();
+  };
+  canvas.addEventListener("wheel", e => {
+    if (!view) return; e.preventDefault();
+    const [lx, ly] = toLocal(e), wx = (lx - view.ox) / view.s, wy = (view.oy - ly) / view.s;
+    zoomAt(wx, wy, Math.exp(Math.max(-300, Math.min(300, e.deltaY)) * 0.0022));
+  }, { passive: false });
+  const zoomCenter = k => { if (!view) return; const [a, b, c, d] = visRect(); zoomAt((a + c) / 2, (b + d) / 2, k); };
+  document.getElementById("zin").addEventListener("click", () => zoomCenter(0.6));
+  document.getElementById("zout").addEventListener("click", () => zoomCenter(1 / 0.6));
+  document.getElementById("zall").addEventListener("click", () => { userExt = null; scheduleRender(); });
+  let drag = null;
+  canvas.addEventListener("pointerdown", e => { if (e.button !== 0 || !view) return; drag = { x: e.clientX, y: e.clientY, ext: visRect(), moved: false }; });
+  window.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+    drag.moved = true; canvas.style.cursor = "grabbing";
+    const r = canvas.getBoundingClientRect(), k = PW / r.width / view.s, [a, b, c, d] = drag.ext;
+    userExt = [a - dx * k, b + dy * k, c - dx * k, d + dy * k]; scheduleRender();
+  });
+  window.addEventListener("pointerup", () => { if (drag && drag.moved) suppressClick = true; drag = null; canvas.style.cursor = ""; }); wireSeg("weight", "weight"); wireSeg("style", "style");
+  wireSeg("kind", "kind", () => { userExt = null; if (S.kind === "meet" && !S.travelers.length) loadPreset("clasicas"); syncShedUI(); if (S.kind === "one") setDest(S.dest, S.destLabel, cityList.find(c => c.label === S.destLabel)?.slug); });
   wireSeg("objective", "objective"); wireSeg("meetView", "meetView");
   document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
     if (b.dataset.preset === "clear") { S.travelers = []; renderTravelers(); document.getElementById("addp").focus(); return; }
@@ -1243,6 +1417,7 @@ async function init() {
   const br = document.getElementById("branches"), brOut = document.getElementById("branchout");
   br.addEventListener("input", () => { S.branches = +br.value; brOut.textContent = br.value; update(); });
   canvas.addEventListener("click", e => {
+    if (suppressClick) { suppressClick = false; return; }
     if (!view) return;
     const r = canvas.getBoundingClientRect();
     const lx = (e.clientX - r.left) / r.width * PW, ly = (e.clientY - r.top) / r.height * PH;
@@ -1279,15 +1454,15 @@ async function init() {
   });
   document.getElementById("save").addEventListener("click", async () => {
     const off = document.createElement("canvas"); const scale = 3;
-    off.width = PW * scale; off.height = PH * scale;
-    drawPoster(off.getContext("2d"), scale);
+    off.width = POSTER_W * scale; off.height = POSTER_H * scale;
+    withPoster(() => drawPoster(off.getContext("2d"), scale));
     render();
     const blob = await new Promise(r => off.toBlob(r, "image/png"));
     const url = URL.createObjectURL(blob);
     const name = fileBase() + ".png";
     document.getElementById("outimg").src = url; document.getElementById("outimg").hidden = false;
     document.getElementById("outvid").hidden = true; document.getElementById("outlink").hidden = true;
-    document.getElementById("outmsg").textContent = `${PW * scale} × ${PH * scale} px. Clic derecho o mantené apretada la imagen para guardarla como ${name}.`;
+    document.getElementById("outmsg").textContent = `${POSTER_W * scale} × ${POSTER_H * scale} px. Clic derecho o mantené apretada la imagen para guardarla como ${name}.`;
     document.getElementById("overlay").hidden = false;
     try { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
   });
@@ -1314,9 +1489,9 @@ async function init() {
       if (opts.city) { const c = cityList.find(c => c.slug === opts.city); setCity(c); }
       else { syncShedUI(); update(); }
     },
-    async png(scale = 3) { const off = document.createElement("canvas"); off.width = PW * scale; off.height = PH * scale; drawPoster(off.getContext("2d"), scale); return off.toDataURL("image/png"); },
+    async png(scale = 3) { const off = document.createElement("canvas"); off.width = POSTER_W * scale; off.height = POSTER_H * scale; withPoster(() => drawPoster(off.getContext("2d"), scale)); return off.toDataURL("image/png"); },
     state: S, meetSpot() { return R && R.meet ? invAlbers(JX[R.best], JY[R.best]) : null; },
-    animFrame(frac, scale = 1) { const off = document.createElement("canvas"); off.width = PW * scale; off.height = PH * scale; const ctx = off.getContext("2d"); const a = drawPoster(ctx, scale, { frames: 60 }); const n = Math.round(frac * 60); for (let k = 0; k < n; k++) animStep(ctx, a, k, 60); if (n >= 60) animFinish(ctx, a); return off.toDataURL("image/png"); },
+    animFrame(frac, scale = 1) { const off = document.createElement("canvas"); off.width = POSTER_W * scale; off.height = POSTER_H * scale; const ctx = off.getContext("2d"); const a = withPoster(() => drawPoster(ctx, scale, { frames: 60 })); const n = Math.round(frac * 60); for (let k = 0; k < n; k++) animStep(ctx, a, k, 60); if (n >= 60) animFinish(ctx, a); return off.toDataURL("image/png"); },
   };
 }
 init().catch(err => { document.getElementById("loading").textContent = "Could not load the road data: " + err.message; console.error(err); });
